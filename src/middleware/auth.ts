@@ -4,22 +4,31 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET!;
+if(!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET não está definido no .env");
+}
 
-export const authMiddleware = (req: Request, _res: Response, next: NextFunction) => {
+const JWT_SECRET = process.env.JWT_SECRET;
+
+export interface AuthenticatedRequest extends Request {
+    user?: { id: string, email: string } | null;
+}
+
+export const authMiddleware = (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
 
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    if (authHeader?.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
         try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET!);
-            (req as any).user = decoded;
+            const decoded = jwt.verify(token, JWT_SECRET!);
+            req.user = decoded as { id: string; email: string };
         } catch {
-            (req as any).user = null;
+            req.user = null;
         }
     } else {
-        (req as any).user = null;
+        req.user = null;
     }
+
     next();
 }
 
@@ -33,7 +42,10 @@ export const getUserFromToken = (token: string) => {
         const cleanedToken = token.startsWith("Bearer ") ? token.replace("Bearer ", "") : token;
         const decoded = jwt.verify(cleanedToken, JWT_SECRET);
 
-        console.log("✅ Token decodificado:", decoded);
+        if(process.env.NODE_ENV !== 'production') {
+            console.log("✅ Token decodificado:", decoded)
+        }
+
         return decoded as { id: string; email: string };
     } catch (err) {
         console.log("❌ Erro ao verificar token:", err);
