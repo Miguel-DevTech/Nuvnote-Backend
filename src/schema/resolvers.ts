@@ -7,6 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
 interface ContextType {
     user?: { id: string; email: string} | null;
+    res?: any; // necessário para definir cookies
 }
 
 export const resolvers = {
@@ -35,7 +36,7 @@ export const resolvers = {
             return { token, user };
             },
 
-        login: async (_: any, { email, password }: { email: string; password: string }) => {
+        login: async (_: any, { email, password }: { email: string; password: string }, context: ContextType) => {
             if(!email || !password) throw new Error("Email and password are required.");
 
             const user = await User.findOne({ email });
@@ -46,8 +47,22 @@ export const resolvers = {
 
             const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
 
-            return { token, user };
+            // 🍪 Setar o token como cookie seguro
+            context.res?.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'None',
+                maxAge: 1000 * 60 * 60 * 24 * 7, // 7 dias/
+            });
+
+            return { user }; // ✅ não precisa mais retornar o token!
+
             },
+
+        logout: async (_: any, __: any, context: ContextType) => {
+            context.res?.clearCookie('token');
+            return true;
+        },
 
         addTask: async (_: any, { name, priority }: any, context: ContextType) => {
             if (!context.user) throw new Error('Authentication required to add a task.');

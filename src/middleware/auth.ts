@@ -33,22 +33,11 @@ export const authMiddleware = (req: AuthenticatedRequest, _res: Response, next: 
 }
 
 export const getUserFromToken = (token: string) => {
+    if (!token) return null;
     try {
-        if (!token) {
-        console.log("❌ Nenhum token recebido.");
-        return null;
-        }
-
-        const cleanedToken = token.startsWith("Bearer ") ? token.replace("Bearer ", "") : token;
-        const decoded = jwt.verify(cleanedToken, JWT_SECRET);
-
-        if(process.env.NODE_ENV !== 'production') {
-            console.log("✅ Token decodificado:", decoded)
-        }
-
-        return decoded as { id: string; email: string };
-    } catch (err) {
-        console.log("❌ Erro ao verificar token:", err);
+        const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string };
+        return decoded;
+    } catch {
         return null;
     }
 };

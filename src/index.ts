@@ -1,17 +1,31 @@
+// backend/src/index.ts
 import express from 'express';
-import { ApolloServer } from 'apollo-server-express';
+import http from 'http';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import { ApolloServer } from '@apollo/server';
+import { expressMiddleware } from '@apollo/server/express4';
 import { typeDefs } from './schema/typeDefs';
 import { resolvers } from './schema/resolvers';
 import { getUserFromToken } from './middleware/auth';
-import dotenv from 'dotenv';
-import cors from 'cors';
+import bodyParser from 'body-parser';
 
 dotenv.config();
 
 const startServer = async () => {
     const app = express();
-    app.use(cors());
+    const httpServer = http.createServer(app);
+
+    app.use(cookieParser());
+
+    app.use(cors({
+        origin: ['http://localhost:5173'], // ajuste aqui para seu front-end
+        credentials: true,
+    }));
+
+    app.use(bodyParser.json());
 
     try {
         await mongoose.connect(process.env.MONGO_URI!);
@@ -24,20 +38,22 @@ const startServer = async () => {
     const server = new ApolloServer({
         typeDefs,
         resolvers,
-        context: ({ req }) => {
-            const token = req.headers.authorization || '';
-            const user = getUserFromToken(token);
-            return { user };
-        },
     });
-    
+
     await server.start();
-    server.applyMiddleware({ app });
+
+    app.use('/graphql', expressMiddleware(server, {
+        context: async ({ req, res }) => {
+        const token = req.cookies.token || '';
+        const user = getUserFromToken(token);
+        return { user, res };
+        }
+    }));
 
     const PORT = process.env.PORT || 4000;
-    app.listen({ port: PORT }, () =>
-        console.log(`🚀 Server ready at http://localhost:${PORT}${server.graphqlPath}`)
-    );
+    httpServer.listen(PORT, () => {
+        console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);
+    });
 };
 
 startServer();
