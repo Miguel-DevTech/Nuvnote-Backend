@@ -50,7 +50,7 @@ export const resolvers = {
             // 🍪 Setar o token como cookie seguro
             context.res?.cookie('token', token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
+                secure: true,
                 sameSite: 'None',
                 maxAge: 1000 * 60 * 60 * 24 * 7, // 7 dias/
             });
