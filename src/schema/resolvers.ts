@@ -67,6 +67,8 @@ export const resolvers = {
         addTask: async (_: any, { name, priority }: any, context: ContextType) => {
             if (!context.user) throw new Error('Authentication required to add a task.');
 
+            console.log("Adicionando tarefa", name);
+
             const task = await Task.create({ name, priority, userId: context.user.id });
             return task;
             },
