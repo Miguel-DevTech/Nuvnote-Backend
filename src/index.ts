@@ -21,12 +21,12 @@ const startServer = async () => {
     app.use(cookieParser());
 
     app.use(cors({
-        origin: ['http://localhost:5173', 'https://nuvnote-frontend.vercel.app/'], // ajuste aqui para seu front-end
+        origin: ['http://localhost:5173', 'https://nuvnote-frontend.vercel.app'], // ajuste aqui para seu front-end
         credentials: true,
     }));
 
     app.options('/graphql', cors({
-        origin: ['http://localhost:5173', 'https://nuvnote-frontend.vercel.app/'],
+        origin: ['http://localhost:5173', 'https://nuvnote-frontend.vercel.app'],
         credentials: true,
     }));
 
